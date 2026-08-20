@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sam's Speedway</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Racing+Sans+One&family=Andika:wght@400;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --asphalt:#202226;
+    --asphalt-light:#2c2f35;
+    --asphalt-card:#34383f;
+    --white:#f7f5f0;
+    --red:#e5383b;
+    --red-dark:#b32226;
+    --blue:#3a86ff;
+    --blue-dark:#2a63c2;
+    --yellow:#ffc93c;
+    --yellow-dark:#d9a512;
+    --purple:#9b5de5;
+    --purple-dark:#7a3ec2;
+    --green:#2d9d5f;
+    --green-dark:#1f7a48;
+    --chrome:#9aa0aa;
+    --line:#454951;
+    --radius:18px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--asphalt);
+    color:var(--white);
+    font-family:'Andika',sans-serif;
+    overscroll-behavior:none;
+    user-select:none;
+  }
+  #app{
+    max-width:520px; margin:0 auto; min-height:100vh;
+    display:flex; flex-direction:column;
+    position:relative;
+  }
+  .screen{ display:none; flex-direction:column; flex:1; padding:18px 18px 28px; }
+  .screen.active{ display:flex; }
+
+  /* checkered strip */
+  .checker-strip{
+    height:14px; width:100%;
+    background-image:
+      linear-gradient(45deg, var(--white) 25%, transparent 25%, transparent 75%, var(--white) 75%),
+      linear-gradient(45deg, var(--white) 25%, transparent 25%, transparent 75%, var(--white) 75%);
+    background-size:14px 14px;
+    background-position:0 0, 7px 7px;
+    background-color:var(--asphalt);
+    opacity:.9;
+    flex-shrink:0;
+  }
+
+  /* ---------- HOME ---------- */
+  .home-header{ text-align:center; padding:18px 0 8px; }
+  .home-title{
+    font-family:'Racing Sans One',cursive;
+    font-size:2.5rem; letter-spacing:.5px;
+    color:var(--white);
+    text-shadow: 2px 2px 0 var(--red-dark);
+    margin:0;
+  }
+  .home-sub{
+    font-size:.95rem; color:var(--chrome); margin:4px 0 0;
+    letter-spacing:.5px;
+  }
+
+  .grid-slots{
+    display:flex; flex-direction:column; gap:14px;
+    margin-top:18px;
+  }
+  .slot{
+    display:flex; align-items:center; gap:14px;
+    background:var(--asphalt-card);
+    border:2px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 16px;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+  }
+  .slot:active{ transform:scale(.98); }
+  .slot .pos{
+    font-family:'Orbitron',monospace; font-weight:700;
+    font-size:1.6rem; color:var(--asphalt);
+    background:var(--white);
+    border-radius:10px;
+    width:46px; height:46px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .slot .info{ flex:1; min-width:0; }
+  .slot .cat-name{ font-family:'Racing Sans One',cursive; font-size:1.3rem; }
+  .slot .cat-count{ font-size:.85rem; color:var(--chrome); }
+  .slot .stripe{
+    position:absolute; left:0; top:0; bottom:0; width:8px;
+  }
+  .slot[data-color="red"] .stripe{ background:var(--red); }
+  .slot[data-color="blue"] .stripe{ background:var(--blue); }
+  .slot[data-color="yellow"] .stripe{ background:var(--yellow); }
+  .slot[data-color="purple"] .stripe{ background:var(--purple); }
+  .slot .chev{ color:var(--chrome); font-size:1.4rem; flex-shrink:0; }
+  .slot .edit-btn{
+    flex-shrink:0; font-size:1.25rem;
+    width:40px; height:40px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--asphalt-light);
+    border:2px solid var(--line);
+  }
+  .slot .edit-btn:active{ background:var(--asphalt); }
+
+  .home-footer{
+    margin-top:auto; padding-top:18px;
+    display:flex; gap:10px;
+  }
+  .ghost-btn{
+    flex:1;
+    background:transparent;
+    border:2px solid var(--line);
+    color:var(--white);
+    border-radius:12px;
+    padding:12px;
+    font-family:'Andika',sans-serif; font-weight:700; font-size:.95rem;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    cursor:pointer;
+  }
+  .ghost-btn:active{ background:var(--asphalt-light); }
+
+  /* ---------- TOPBAR (shared) ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:4px 0 12px;
+  }
+  .icon-btn{
+    background:var(--asphalt-card); border:2px solid var(--line);
+    color:var(--white); border-radius:10px; width:42px; height:42px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+  }
+  .icon-btn:active{ background:var(--asphalt-light); }
+  .topbar-title{
+    font-family:'Racing Sans One',cursive; font-size:1.3rem;
+    text-align:center; flex:1;
+  }
+
+  /* ---------- PRACTICE ---------- */
+  .track-progress{
+    position:relative; height:34px; margin:6px 0 22px;
+    background:var(--asphalt-card);
+    border-radius:17px; border:2px solid var(--line);
+    overflow:hidden;
+  }
+  .track-progress .fill{
+    position:absolute; left:0; top:0; bottom:0;
+    background:repeating-linear-gradient(90deg, var(--green) 0 10px, var(--green-dark) 10px 20px);
+    width:0%;
+    transition:width .3s ease;
+  }
+  .track-progress .car{
+    position:absolute; top:50%; transform:translate(-50%,-50%);
+    font-size:1.3rem; left:0%; transition:left .3s ease;
+  }
+  .track-progress .flag{
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    font-size:1.1rem;
+  }
+
+  .card-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .flash-card{
+    width:100%; max-width:360px; aspect-ratio:1/1;
+    background:var(--white);
+    border-radius:24px;
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+    box-shadow: 0 10px 0 var(--line), inset 0 0 0 6px var(--asphalt);
+  }
+  .flash-card .glyph{
+    font-family:'Andika',sans-serif; font-weight:700;
+    color:var(--asphalt);
+    font-size:9rem;
+    line-height:1;
+  }
+  .flash-card .plate-label{
+    position:absolute; bottom:14px; left:0; right:0;
+    text-align:center; font-size:.8rem; letter-spacing:3px;
+    color:var(--chrome); font-family:'Orbitron',monospace;
+  }
+
+  .streak-note{
+    margin-top:14px; text-align:center; color:var(--chrome); font-size:.9rem; min-height:1.2em;
+  }
+
+  .answer-row{
+    display:flex; gap:14px; margin-top:22px;
+  }
+  .ans-btn{
+    flex:1; border:none; border-radius:16px;
+    padding:18px 10px; font-family:'Racing Sans One',cursive; font-size:1.15rem;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    cursor:pointer; color:var(--white);
+  }
+  .ans-btn:active{ transform:scale(.96); }
+  .ans-btn.correct{ background:var(--green); box-shadow:0 5px 0 var(--green-dark); }
+  .ans-btn.wrong{ background:var(--red); box-shadow:0 5px 0 var(--red-dark); }
+  .ans-btn .emoji{ font-size:1.6rem; }
+
+  .mastery-toast{
+    position:fixed; left:50%; top:22px; transform:translate(-50%,-140%);
+    background:var(--yellow); color:var(--asphalt);
+    font-family:'Racing Sans One',cursive; font-size:1.05rem;
+    padding:12px 20px; border-radius:14px;
+    box-shadow:0 6px 0 var(--yellow-dark);
+    transition:transform .35s ease;
+    z-index:50; white-space:nowrap;
+  }
+  .mastery-toast.show{ transform:translate(-50%,0); }
+
+  /* ---------- LIST MANAGE ---------- */
+  .list-form{ display:flex; gap:8px; margin-bottom:14px; }
+  .list-form input{
+    flex:1; padding:12px 14px; border-radius:12px; border:2px solid var(--line);
+    background:var(--asphalt-card); color:var(--white); font-size:1rem;
+    font-family:'Andika',sans-serif;
+  }
+  .list-form input:focus{ outline:2px solid var(--yellow); border-color:var(--yellow); }
+  .add-btn{
+    background:var(--purple); border:none; color:var(--white);
+    border-radius:12px; padding:0 18px; font-weight:700; cursor:pointer;
+    box-shadow:0 4px 0 var(--purple-dark);
+  }
+  .add-btn:active{ transform:translateY(2px); box-shadow:none; }
+
+  .chip-list{ display:flex; flex-wrap:wrap; gap:10px; }
+  .chip{
+    display:flex; align-items:center; gap:8px;
+    background:var(--asphalt-card); border:2px solid var(--line);
+    border-radius:12px; padding:8px 8px 8px 14px;
+    font-size:1.1rem;
+  }
+  .chip button{
+    background:var(--red); border:none; color:var(--white);
+    width:24px; height:24px; border-radius:50%; cursor:pointer;
+    font-size:.85rem; line-height:1;
+  }
+  .empty-note{ color:var(--chrome); text-align:center; margin-top:30px; font-size:.95rem; line-height:1.5; }
+
+  /* ---------- STATS ---------- */
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+  .stat-box{
+    background:var(--asphalt-card); border:2px solid var(--line); border-radius:14px;
+    padding:14px; text-align:center;
+  }
+  .stat-box .num{ font-family:'Orbitron',monospace; font-size:1.8rem; }
+  .stat-box .lbl{ font-size:.8rem; color:var(--chrome); margin-top:2px; }
+
+  .section-label{
+    font-family:'Racing Sans One',cursive; font-size:1.1rem; margin:10px 0 8px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .trophy-grid{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
+  }
+  .trophy{
+    aspect-ratio:1/1; background:var(--asphalt-card); border:2px solid var(--yellow);
+    border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-family:'Andika',sans-serif; font-weight:700; font-size:1.2rem;
+    color:var(--yellow);
+  }
+
+  /* scrollable areas */
+  .scroll-area{ overflow-y:auto; flex:1; }
+
+  ::-webkit-scrollbar{ width:0; height:0; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+
+  /* ---------- perimeter decor (home screen only) ---------- */
+  .perimeter-decor{
+    position:absolute; top:0; left:0;
+    width:30px; height:15px;
+    pointer-events:none;
+    z-index:5;
+  }
+  .perimeter-decor svg{ width:100%; height:100%; display:block; overflow:visible; }
+  #perimeter-car{ animation: drive-loop 13s linear infinite; offset-rotate:auto; }
+  #perimeter-truck{ animation: drive-loop 19s linear infinite reverse; animation-delay:-5s; offset-rotate:auto; }
+  @keyframes drive-loop{
+    from{ offset-distance:0%; }
+    to{ offset-distance:100%; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .perimeter-decor{ display:none !important; }
+  }
+
+  /* ---------- corner flag wave (on correct answer) ---------- */
+  #screen-practice{ position:relative; }
+  .flag-wave{
+    position:absolute; top:6px; right:10px;
+    font-size:2.1rem;
+    opacity:0;
+    transform-origin:70% 90%;
+    pointer-events:none;
+    z-index:20;
+  }
+  .flag-wave.waving{ animation: flag-pop-wave .9s ease; }
+  @keyframes flag-pop-wave{
+    0%{ opacity:0; transform:scale(.4) rotate(0deg); }
+    15%{ opacity:1; transform:scale(1.2) rotate(-20deg); }
+    30%{ transform:scale(1.05) rotate(16deg); }
+    45%{ transform:scale(1.05) rotate(-13deg); }
+    60%{ transform:scale(1.05) rotate(11deg); }
+    75%{ transform:scale(1) rotate(-6deg); }
+    100%{ opacity:0; transform:scale(.9) rotate(0deg); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .flag-wave{ display:none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="checker-strip"></div>
+
+    <div class="perimeter-decor" id="perimeter-car" aria-hidden="true">
+      <svg viewBox="0 0 48 24" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="10" width="40" height="8" rx="3" fill="#e5383b"/>
+        <path d="M10 10 L16 3 H32 L38 10 Z" fill="#e5383b"/>
+        <path d="M18.5 5.5 H29.5 L32 10 H16 Z" fill="#cfe8ff" opacity=".8"/>
+        <circle cx="12" cy="19" r="4" fill="#17181c" stroke="#9aa0aa" stroke-width="1"/>
+        <circle cx="34" cy="19" r="4" fill="#17181c" stroke="#9aa0aa" stroke-width="1"/>
+        <rect x="4" y="12" width="6" height="2" fill="#f7f5f0" opacity=".7"/>
+      </svg>
+    </div>
+
+    <div class="perimeter-decor" id="perimeter-truck" aria-hidden="true">
+      <svg viewBox="0 0 48 24" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="11" width="44" height="7" rx="1" fill="#8a5a34"/>
+        <rect x="4" y="4" width="15" height="9" rx="1.5" fill="#8a5a34"/>
+        <rect x="6.5" y="6" width="8.5" height="5" fill="#cfe8ff" opacity=".7"/>
+        <rect x="21" y="8" width="23" height="4" fill="#6f4626"/>
+        <circle cx="10" cy="12" r="2" fill="#5c3a1e" opacity=".55"/>
+        <circle cx="30" cy="14.5" r="1.6" fill="#5c3a1e" opacity=".5"/>
+        <circle cx="40" cy="11.5" r="1.3" fill="#5c3a1e" opacity=".5"/>
+        <circle cx="12" cy="19" r="4" fill="#17181c" stroke="#9aa0aa" stroke-width="1"/>
+        <circle cx="38" cy="19" r="4" fill="#17181c" stroke="#9aa0aa" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <div class="home-header">
+      <h1 class="home-title">🏁 Sam's Speedway</h1>
+      <p class="home-sub">Pick a lane to start practicing</p>
+    </div>
+    <div class="grid-slots" id="home-slots"></div>
+    <div class="home-footer">
+      <button class="ghost-btn" id="btn-stats">🏆 Progress</button>
+      <button class="ghost-btn" id="btn-fullscreen-home">⛶ Fullscreen</button>
+    </div>
+  </div>
+
+  <!-- PRACTICE -->
+  <div class="screen" id="screen-practice">
+    <div class="flag-wave" id="flag-wave">🏁</div>
+    <div class="topbar">
+      <div class="icon-btn" id="btn-practice-back">←</div>
+      <div class="topbar-title" id="practice-title">Category</div>
+      <div class="icon-btn" id="btn-practice-fullscreen">⛶</div>
+    </div>
+    <div class="track-progress">
+      <div class="fill" id="track-fill"></div>
+      <div class="car" id="track-car">🏎️</div>
+      <div class="flag" id="track-flag">🏁</div>
+    </div>
+    <div class="card-wrap">
+      <div class="flash-card">
+        <div class="glyph" id="practice-glyph">A</div>
+        <div class="plate-label" id="practice-plate">SAM · 001</div>
+      </div>
+      <div class="streak-note" id="streak-note"></div>
+    </div>
+    <div class="answer-row">
+      <button class="ans-btn wrong" id="btn-wrong"><span class="emoji">🚧</span>Try again</button>
+      <button class="ans-btn correct" id="btn-correct"><span class="emoji">🏆</span>Got it!</button>
+    </div>
+  </div>
+
+  <!-- MANAGE LIST -->
+  <div class="screen" id="screen-manage">
+    <div class="topbar">
+      <div class="icon-btn" id="btn-manage-back">←</div>
+      <div class="topbar-title">Sam's List</div>
+      <div style="width:42px;"></div>
+    </div>
+    <div class="list-form">
+      <input type="text" id="manage-input" placeholder="Add a letter or number" maxlength="6">
+      <button class="add-btn" id="btn-manage-add">Add</button>
+    </div>
+    <div class="scroll-area">
+      <div class="chip-list" id="manage-chips"></div>
+      <div class="empty-note" id="manage-empty">No items yet. Add letters or numbers Sam is working on and they'll show up here.</div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="screen" id="screen-stats">
+    <div class="topbar">
+      <div class="icon-btn" id="btn-stats-back">←</div>
+      <div class="topbar-title">Progress</div>
+      <div style="width:42px;"></div>
+    </div>
+    <div class="scroll-area">
+      <div class="stat-grid" id="stat-grid"></div>
+      <div id="mastered-sections"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="mastery-toast" id="mastery-toast">🏁 Mastered!</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var HISTORY_KEY = "speedway_history_v1";
+  var CUSTOM_KEY = "speedway_custom_v1";
+  var MASTERY_STREAK = 10;
+
+  function range(a,b){ var r=[]; for(var i=a;i<=b;i++) r.push(String(i)); return r; }
+  function alphaUpper(){ var r=[]; for(var c=65;c<=90;c++) r.push(String.fromCharCode(c)); return r; }
+  function alphaLower(){ var r=[]; for(var c=97;c<=122;c++) r.push(String.fromCharCode(c)); return r; }
+
+  function loadCustom(){
+    try{
+      var raw = localStorage.getItem(CUSTOM_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveCustom(list){
+    try{ localStorage.setItem(CUSTOM_KEY, JSON.stringify(list)); }catch(e){}
+  }
+
+  var CATEGORIES = {
+    upper:  { id:"upper",  name:"Capital Letters", pos:"P1", color:"red",    items: alphaUpper() },
+    lower:  { id:"lower",  name:"Lowercase Letters", pos:"P2", color:"blue",  items: alphaLower() },
+    numbers:{ id:"numbers",name:"Numbers 0-9",     pos:"P3", color:"yellow", items: range(0,9) },
+    custom: { id:"custom", name:"Sam's List",      pos:"P4", color:"purple", items: [] }
+  };
+  function refreshCustomItems(){ CATEGORIES.custom.items = loadCustom(); }
+  refreshCustomItems();
+
+  function itemKey(catId, item){ return catId + ":" + item; }
+
+  function loadHistory(){
+    try{
+      var raw = localStorage.getItem(HISTORY_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveHistory(h){
+    try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); }catch(e){}
+  }
+  var history = loadHistory();
+
+  function logAttempt(catId, item, correct){
+    var key = itemKey(catId, item);
+    if(!history[key]) history[key] = [];
+    history[key].push({ t: Date.now(), c: correct });
+    saveHistory(history);
+  }
+  function currentStreak(catId, item){
+    var key = itemKey(catId, item);
+    var log = history[key] || [];
+    var streak = 0;
+    for(var i=log.length-1; i>=0; i--){
+      if(log[i].c){ streak++; } else { break; }
+    }
+    return streak;
+  }
+  function isMastered(catId, item){
+    return currentStreak(catId, item) >= MASTERY_STREAK;
+  }
+  function categoryStats(catId){
+    var cat = CATEGORIES[catId];
+    var total = cat.items.length;
+    var mastered = 0, attempted = 0, correctCount = 0, totalCount = 0;
+    cat.items.forEach(function(item){
+      var key = itemKey(catId, item);
+      var log = history[key] || [];
+      if(log.length){ attempted++; }
+      log.forEach(function(a){ totalCount++; if(a.c) correctCount++; });
+      if(isMastered(catId, item)) mastered++;
+    });
+    return { total:total, mastered:mastered, attempted:attempted, correctCount:correctCount, totalCount:totalCount };
+  }
+
+  /* ---------------- sound (synth, no external assets) ---------------- */
+  var actx = null;
+  function ctx(){
+    if(!actx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) actx = new AC();
+    }
+    return actx;
+  }
+  function beep(freq, dur, type, startTime, gainVal){
+    var a = ctx(); if(!a) return;
+    var osc = a.createOscillator();
+    var gain = a.createGain();
+    osc.type = type || "square";
+    osc.frequency.value = freq;
+    gain.gain.value = gainVal || 0.06;
+    osc.connect(gain); gain.connect(a.destination);
+    var t = a.currentTime + (startTime||0);
+    osc.start(t);
+    gain.gain.setValueAtTime(gain.gain.value, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+dur);
+    osc.stop(t+dur+0.02);
+  }
+  function playCorrect(){
+    // quick ascending "engine rev" honk
+    beep(440,0.09,"square",0,0.05);
+    beep(660,0.09,"square",0.08,0.05);
+    beep(880,0.14,"square",0.16,0.06);
+  }
+  function playWrong(){
+    // low buzzer / screech
+    beep(160,0.22,"sawtooth",0,0.05);
+    beep(120,0.28,"sawtooth",0.05,0.05);
+  }
+  function playMastery(){
+    beep(523,0.1,"square",0,0.05);
+    beep(659,0.1,"square",0.1,0.05);
+    beep(784,0.1,"square",0.2,0.05);
+    beep(1047,0.22,"square",0.3,0.07);
+  }
+
+  /* ---------------- navigation ---------------- */
+  var screens = {
+    home: document.getElementById("screen-home"),
+    practice: document.getElementById("screen-practice"),
+    manage: document.getElementById("screen-manage"),
+    stats: document.getElementById("screen-stats")
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(function(k){
+      screens[k].classList.toggle("active", k===name);
+    });
+  }
+
+  /* ---------------- home rendering ---------------- */
+  function renderHome(){
+    refreshCustomItems();
+    var wrap = document.getElementById("home-slots");
+    wrap.innerHTML = "";
+    ["upper","lower","numbers","custom"].forEach(function(id){
+      var cat = CATEGORIES[id];
+      var stats = categoryStats(id);
+      var slot = document.createElement("div");
+      slot.className = "slot";
+      slot.setAttribute("data-color", cat.color);
+      var trailingHtml = id === "custom"
+        ? '<div class="edit-btn" title="Edit Sam\'s list">✏️</div>'
+        : '<div class="chev">▶</div>';
+      slot.innerHTML =
+        '<div class="stripe"></div>' +
+        '<div class="pos">' + cat.pos + '</div>' +
+        '<div class="info">' +
+          '<div class="cat-name">' + cat.name + '</div>' +
+          '<div class="cat-count">' + stats.total + (stats.total===1?' item':' items') +
+            (stats.mastered ? ' · ' + stats.mastered + ' mastered' : '') +
+          '</div>' +
+        '</div>' +
+        trailingHtml;
+      slot.addEventListener("click", function(e){
+        if(id === "custom" && e.target.closest(".edit-btn")){
+          openManage();
+          return;
+        }
+        if(id === "custom" && cat.items.length === 0){
+          openManage();
+        } else {
+          startPractice(id);
+        }
+      });
+      wrap.appendChild(slot);
+    });
+  }
+
+  /* ---------------- practice ---------------- */
+  var practiceState = { catId:null, order:[], idx:0, currentItem:null, sessionStreak:0 };
+  var SESSION_METER_MAX = 10;
+
+  function pickPracticeOrder(catId){
+    var cat = CATEGORIES[catId];
+    var items = cat.items.slice();
+    // weight unmastered items more heavily
+    var pool = [];
+    items.forEach(function(item){
+      var mastered = isMastered(catId, item);
+      var weight = mastered ? 1 : 4;
+      for(var i=0;i<weight;i++) pool.push(item);
+    });
+    // shuffle
+    for(var i=pool.length-1; i>0; i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var tmp = pool[i]; pool[i]=pool[j]; pool[j]=tmp;
+    }
+    return pool;
+  }
+
+  function startPractice(catId){
+    var cat = CATEGORIES[catId];
+    if(!cat.items.length){ openManage(); return; }
+    practiceState.catId = catId;
+    practiceState.order = pickPracticeOrder(catId);
+    practiceState.idx = 0;
+    practiceState.sessionStreak = 0;
+    document.getElementById("practice-title").textContent = cat.name;
+    showScreen("practice");
+    nextCard();
+  }
+
+  function nextCard(){
+    var cat = CATEGORIES[practiceState.catId];
+    if(practiceState.idx >= practiceState.order.length){
+      practiceState.order = pickPracticeOrder(practiceState.catId);
+      practiceState.idx = 0;
+    }
+    var item = practiceState.order[practiceState.idx];
+    practiceState.currentItem = item;
+    document.getElementById("practice-glyph").textContent = item;
+    document.getElementById("practice-plate").textContent = "SAM · " + String(practiceState.idx+1).padStart(3,"0");
+    updateTrack();
+  }
+
+  function updateTrack(){
+    var streak = practiceState.sessionStreak;
+    var pct = Math.min(100, Math.round((streak/SESSION_METER_MAX)*100));
+    document.getElementById("track-fill").style.width = pct + "%";
+    document.getElementById("track-car").style.left = pct + "%";
+    var note = document.getElementById("streak-note");
+    if(streak >= SESSION_METER_MAX){
+      note.textContent = "Pedal to the metal! \ud83c\udfc1";
+    } else if(streak > 0){
+      note.textContent = streak + " in a row \u2014 keep going!";
+    } else {
+      note.textContent = "Say it out loud, then tap the result";
+    }
+  }
+
+  function triggerFlagWave(){
+    var el = document.getElementById("flag-wave");
+    if(!el) return;
+    el.classList.remove("waving");
+    void el.offsetWidth; // restart animation
+    el.classList.add("waving");
+  }
+
+  function showMasteryToast(){
+    var t = document.getElementById("mastery-toast");
+    t.classList.add("show");
+    setTimeout(function(){ t.classList.remove("show"); }, 1600);
+  }
+
+  function answer(correct){
+    var catId = practiceState.catId, item = practiceState.currentItem;
+    var wasMastered = isMastered(catId, item);
+    logAttempt(catId, item, correct);
+    if(correct){
+      playCorrect();
+      triggerFlagWave();
+      practiceState.sessionStreak = Math.min(SESSION_METER_MAX, practiceState.sessionStreak + 1);
+    } else {
+      playWrong();
+      practiceState.sessionStreak = Math.max(0, practiceState.sessionStreak - 1);
+    }
+    var nowMastered = isMastered(catId, item);
+    updateTrack();
+    if(!wasMastered && nowMastered){
+      playMastery();
+      showMasteryToast();
+    }
+    practiceState.idx++;
+    setTimeout(nextCard, correct ? 250 : 400);
+  }
+
+  document.getElementById("btn-correct").addEventListener("click", function(){ answer(true); });
+  document.getElementById("btn-wrong").addEventListener("click", function(){ answer(false); });
+  document.getElementById("btn-practice-back").addEventListener("click", function(){
+    renderHome(); showScreen("home");
+  });
+
+  /* ---------------- manage Sam's list ---------------- */
+  function openManage(){
+    renderManage();
+    showScreen("manage");
+  }
+  function renderManage(){
+    var list = loadCustom();
+    var chipWrap = document.getElementById("manage-chips");
+    var emptyNote = document.getElementById("manage-empty");
+    chipWrap.innerHTML = "";
+    emptyNote.style.display = list.length ? "none" : "block";
+    list.forEach(function(item, i){
+      var chip = document.createElement("div");
+      chip.className = "chip";
+      chip.innerHTML = '<span>' + escapeHtml(item) + '</span>';
+      var del = document.createElement("button");
+      del.textContent = "×";
+      del.addEventListener("click", function(){
+        list.splice(i,1);
+        saveCustom(list);
+        renderManage();
+      });
+      chip.appendChild(del);
+      chipWrap.appendChild(chip);
+    });
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function addCustomItem(){
+    var input = document.getElementById("manage-input");
+    var val = input.value.trim();
+    if(!val) return;
+    var list = loadCustom();
+    if(list.indexOf(val) === -1){
+      list.push(val);
+      saveCustom(list);
+    }
+    input.value = "";
+    renderManage();
+  }
+  document.getElementById("btn-manage-add").addEventListener("click", addCustomItem);
+  document.getElementById("manage-input").addEventListener("keydown", function(e){
+    if(e.key === "Enter") addCustomItem();
+  });
+  document.getElementById("btn-manage-back").addEventListener("click", function(){
+    renderHome(); showScreen("home");
+  });
+
+  /* ---------------- stats ---------------- */
+  function renderStats(){
+    refreshCustomItems();
+    var grid = document.getElementById("stat-grid");
+    var totalMastered = 0, totalItems = 0, totalCorrect = 0, totalAttempts = 0;
+    ["upper","lower","numbers","custom"].forEach(function(id){
+      var s = categoryStats(id);
+      totalMastered += s.mastered;
+      totalItems += s.total;
+      totalCorrect += s.correctCount;
+      totalAttempts += s.totalCount;
+    });
+    var acc = totalAttempts ? Math.round((totalCorrect/totalAttempts)*100) : 0;
+    grid.innerHTML =
+      statBox(totalMastered, "Mastered") +
+      statBox(totalItems, "Total items") +
+      statBox(totalAttempts, "Attempts") +
+      statBox(acc + "%", "Accuracy");
+
+    var sections = document.getElementById("mastered-sections");
+    sections.innerHTML = "";
+    ["upper","lower","numbers","custom"].forEach(function(id){
+      var cat = CATEGORIES[id];
+      var mastered = cat.items.filter(function(item){ return isMastered(id,item); });
+      var label = document.createElement("div");
+      label.className = "section-label";
+      label.textContent = "🏆 " + cat.name + " (" + mastered.length + "/" + cat.items.length + ")";
+      sections.appendChild(label);
+      var g = document.createElement("div");
+      g.className = "trophy-grid";
+      if(mastered.length === 0){
+        var none = document.createElement("div");
+        none.className = "empty-note";
+        none.style.marginTop = "0";
+        none.style.gridColumn = "1/-1";
+        none.textContent = "None mastered yet.";
+        g.appendChild(none);
+      } else {
+        mastered.forEach(function(item){
+          var t = document.createElement("div");
+          t.className = "trophy";
+          t.textContent = item;
+          g.appendChild(t);
+        });
+      }
+      sections.appendChild(g);
+    });
+  }
+  function statBox(num, label){
+    return '<div class="stat-box"><div class="num">'+num+'</div><div class="lbl">'+label+'</div></div>';
+  }
+  document.getElementById("btn-stats").addEventListener("click", function(){
+    renderStats(); showScreen("stats");
+  });
+  document.getElementById("btn-stats-back").addEventListener("click", function(){
+    renderHome(); showScreen("home");
+  });
+
+  /* ---------------- fullscreen (inline SVG four-corner icon) ---------------- */
+  var expandSVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M4 9V4H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M20 9V4H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M4 15V20H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M20 15V20H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>';
+  document.getElementById("btn-fullscreen-home").innerHTML = expandSVG + '<span style="margin-left:6px;">Fullscreen</span>';
+  document.getElementById("btn-practice-fullscreen").innerHTML = expandSVG;
+  function toggleFullscreen(){
+    if(!document.fullscreenElement){
+      document.documentElement.requestFullscreen().catch(function(){});
+    } else {
+      document.exitFullscreen().catch(function(){});
+    }
+  }
+  document.getElementById("btn-fullscreen-home").addEventListener("click", toggleFullscreen);
+  document.getElementById("btn-practice-fullscreen").addEventListener("click", toggleFullscreen);
+
+  /* ---------------- perimeter decor (car + truck) ---------------- */
+  function buildPerimeterPath(el){
+    var w = el.clientWidth, h = el.clientHeight;
+    var inset = 8, r = 18;
+    var x0=inset, y0=inset, x1=w-inset, y1=h-inset;
+    return "M "+(x0+r)+","+y0+
+      " L "+(x1-r)+","+y0+
+      " Q "+x1+","+y0+" "+x1+","+(y0+r)+
+      " L "+x1+","+(y1-r)+
+      " Q "+x1+","+y1+" "+(x1-r)+","+y1+
+      " L "+(x0+r)+","+y1+
+      " Q "+x0+","+y1+" "+x0+","+(y1-r)+
+      " L "+x0+","+(y0+r)+
+      " Q "+x0+","+y0+" "+(x0+r)+","+y0+
+      " Z";
+  }
+  function setupPerimeterDecor(){
+    var car = document.getElementById("perimeter-car");
+    var truck = document.getElementById("perimeter-truck");
+    if(!car || !truck) return;
+    var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var supported = window.CSS && CSS.supports && CSS.supports("offset-path", "path('M0 0')");
+    if(reduceMotion || !supported){
+      car.style.display = "none";
+      truck.style.display = "none";
+      return;
+    }
+    var homeScreen = document.getElementById("screen-home");
+    function apply(){
+      if(homeScreen.clientWidth === 0) return; // not visible/laid out yet
+      var d = buildPerimeterPath(homeScreen);
+      car.style.offsetPath = "path('" + d + "')";
+      truck.style.offsetPath = "path('" + d + "')";
+    }
+    apply();
+    window.addEventListener("resize", apply);
+    window.addEventListener("orientationchange", apply);
+  }
+
+  /* ---------------- init ---------------- */
+  renderHome();
+  setupPerimeterDecor();
+})();
+</script>
+</body>
+</html>
