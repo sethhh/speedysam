@@ -87,14 +87,14 @@
   }
   .slot:active{ transform:scale(.98); }
   .slot .pos{
-    font-family:'Orbitron',monospace; font-weight:700;
-    font-size:1.6rem; color:var(--asphalt);
     background:var(--white);
     border-radius:10px;
     width:46px; height:46px;
+    padding:6px;
     display:flex; align-items:center; justify-content:center;
     flex-shrink:0;
   }
+  .slot .pos svg{ width:100%; height:100%; display:block; }
   .slot .info{ flex:1; min-width:0; }
   .slot .cat-name{ font-family:'Racing Sans One',cursive; font-size:1.3rem; }
   .slot .cat-count{ font-size:.85rem; color:var(--chrome); }
@@ -518,28 +518,49 @@
   }
 
   /* ============================================================
-     SOUND EFFECTS
+     SOUND EFFECTS — PLUG IN YOUR OWN MP3s HERE
      ------------------------------------------------------------
-     HOW TO SWAP IN REAL AUDIO FILES (e.g. from Pixabay):
-       1. Create a folder named "sounds" next to this HTML file.
-       2. Drop your audio file in it, e.g.  sounds/correct.mp3
-       3. Type that filename into SOUND_FILES below, e.g.
-            correct: "correct.mp3"
-       4. Save. That's it — no other code needs to change.
-     Leave a slot as "" (empty string) to keep the built-in
-     synthesized placeholder sound for that effect.
+     Every sound in the app plays through SOUND_FILES below. To
+     replace any sound with a real MP3 you found (e.g. on Pixabay):
+
+       1. In your GitHub repo, next to this HTML file, create a
+          folder named exactly:  sounds
+          (so you end up with a path like  sounds/whatever.mp3
+          sitting alongside sams-speedway.html)
+
+       2. Add your MP3 file into that "sounds" folder and commit /
+          push it to GitHub along with the HTML file.
+
+       3. Come back to the list below and type the file's name
+          (just the filename, NOT the full path — no "sounds/" in
+          front of it, that part is added automatically) into the
+          matching slot, in quotes. For example, if you added
+          sounds/vroom.mp3, change:
+              correct: ""
+          to:
+              correct: "vroom.mp3"
+
+       4. Save this file and refresh the page. Done — no other
+          code anywhere needs to change.
+
+     Leave a slot as "" (empty quotes) to keep using the built-in
+     synthesized placeholder beep for that effect until you're
+     ready to swap it. File names are case-sensitive, so make sure
+     what you type here matches the uploaded file exactly.
      ============================================================ */
   var SOUND_FILES = {
     correct:   "",   // "Got it!" button — right answer
     wrong:     "",   // "Try again" button — wrong answer
     mastery:   "",   // a letter/number hits 10-in-a-row (mastered)
-    hornRed:   "",   // tapping the RED fun car on the home screen
-    hornBlue:  "",   // tapping the BLUE fun car on the home screen
-    hornGreen: ""    // tapping the GREEN fun car on the home screen
+    hornRed:    "",  // tapping the RED fun car on the home screen
+    hornBlue:   "",  // tapping the BLUE fun car on the home screen
+    hornYellow: ""   // tapping the YELLOW fun car on the home screen
   };
 
   // Plays SOUND_FILES[key] if a filename is set; otherwise falls
   // back to the synthesized version in SOUND_SYNTH below.
+  // (You shouldn't need to touch this function — just edit the
+  // filenames in SOUND_FILES above.)
   function playSound(key){
     var file = SOUND_FILES[key];
     if(file){
@@ -609,8 +630,8 @@
       beep(523,0.12,"triangle",0,0.07);
       beep(523,0.12,"triangle",0.18,0.07);
     },
-    // --- green fun car: friendly descending chime ---
-    hornGreen: function(){
+    // --- yellow fun car: friendly descending chime ---
+    hornYellow: function(){
       beep(784,0.11,"sine",0,0.06);
       beep(659,0.11,"sine",0.09,0.06);
       beep(523,0.18,"sine",0.18,0.07);
@@ -633,9 +654,9 @@
   /* ---------------- home rendering ---------------- */
   /* ---------------- home screen: tap-for-fun cars ---------------- */
   var FUN_CARS = [
-    { id:"red",   base:"#e5383b", light:"#ff8688", dark:"#7f1417", sound:"hornRed"   },
-    { id:"blue",  base:"#3a86ff", light:"#9cc4ff", dark:"#1a3f80", sound:"hornBlue"  },
-    { id:"green", base:"#2d9d5f", light:"#7fe0a8", dark:"#155c35", sound:"hornGreen" }
+    { id:"red",    base:"#e5383b", light:"#ff8688", dark:"#7f1417", sound:"hornRed"    },
+    { id:"blue",   base:"#3a86ff", light:"#9cc4ff", dark:"#1a3f80", sound:"hornBlue"   },
+    { id:"yellow", base:"#ffc93c", light:"#fff1b8", dark:"#a8770c", sound:"hornYellow" }
   ];
 
   // Stylized front-on car with gradient shading for a pseudo-3D look.
@@ -686,6 +707,26 @@
     });
   }
 
+  // Little side-view dragster icon, tinted to match each lane's color.
+  var LANE_COLORS = {
+    red:    { base:"#e5383b", dark:"#b32226" },
+    blue:   { base:"#3a86ff", dark:"#2a63c2" },
+    yellow: { base:"#ffc93c", dark:"#d9a512" },
+    purple: { base:"#9b5de5", dark:"#7a3ec2" }
+  };
+  function dragsterIconSVG(colorKey){
+    var c = LANE_COLORS[colorKey] || LANE_COLORS.red;
+    return '<svg viewBox="0 0 60 32" xmlns="http://www.w3.org/2000/svg">' +
+      '<ellipse cx="47" cy="24" rx="8.5" ry="8.5" fill="#17181c"/>' +
+      '<ellipse cx="47" cy="24" rx="3.2" ry="3.2" fill="#565a62"/>' +
+      '<ellipse cx="11" cy="25" rx="4.4" ry="4.4" fill="#17181c"/>' +
+      '<path d="M2,25 L8,25 L13,17 L18,15 L40,14 C44,14 46,17 46,19 L46,21 L38,21 L34,25 Z" fill="'+c.base+'" stroke="'+c.dark+'" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '<rect x="34" y="7" width="15" height="4.4" rx="1.4" fill="'+c.dark+'"/>' +
+      '<rect x="44" y="11" width="3" height="8" fill="'+c.dark+'"/>' +
+      '<path d="M20,16 C23,11 30,11 33,15" fill="none" stroke="#1d2b3a" stroke-width="2.2" stroke-linecap="round"/>' +
+    '</svg>';
+  }
+
   function renderHome(){
     refreshCustomItems();
     var wrap = document.getElementById("home-slots");
@@ -701,7 +742,7 @@
         : '<div class="chev">▶</div>';
       slot.innerHTML =
         '<div class="stripe"></div>' +
-        '<div class="pos">' + cat.pos + '</div>' +
+        '<div class="pos" title="' + cat.pos + '">' + dragsterIconSVG(cat.color) + '</div>' +
         '<div class="info">' +
           '<div class="cat-name">' + cat.name + '</div>' +
           '<div class="cat-count">' + stats.total + (stats.total===1?' item':' items') +
