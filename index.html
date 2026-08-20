@@ -115,6 +115,18 @@
   }
   .slot .edit-btn:active{ background:var(--asphalt); }
 
+  .fun-cars{
+    display:flex; align-items:flex-end; justify-content:space-around;
+    gap:8px; margin-top:20px; padding:0 4px;
+  }
+  .fun-car-btn{
+    background:none; border:none; padding:0; margin:0;
+    width:30%; max-width:118px;
+    cursor:pointer;
+  }
+  .fun-car-btn svg{ width:100%; height:auto; display:block; }
+  .fun-car-btn:active{ transform:scale(.93); }
+
   .home-footer{
     margin-top:auto; padding-top:18px;
     display:flex; gap:10px;
@@ -163,7 +175,7 @@
     transition:width .3s ease;
   }
   .track-progress .car{
-    position:absolute; top:50%; transform:translate(-50%,-50%);
+    position:absolute; top:50%; transform:translate(-50%,-50%) scaleX(-1);
     font-size:1.3rem; left:0%; transition:left .3s ease;
   }
   .track-progress .flag{
@@ -290,8 +302,8 @@
     z-index:5;
   }
   .perimeter-decor svg{ width:100%; height:100%; display:block; overflow:visible; }
-  #perimeter-car{ animation: drive-loop 13s linear infinite; offset-rotate:auto; }
-  #perimeter-truck{ animation: drive-loop 19s linear infinite reverse; animation-delay:-5s; offset-rotate:auto; }
+  #perimeter-car{ animation: drive-loop 13s linear infinite reverse; offset-rotate:auto; }
+  #perimeter-truck{ animation: drive-loop 19s linear infinite; animation-delay:-5s; offset-rotate:auto; }
   @keyframes drive-loop{
     from{ offset-distance:0%; }
     to{ offset-distance:100%; }
@@ -362,6 +374,7 @@
       <p class="home-sub">Pick a lane to start practicing</p>
     </div>
     <div class="grid-slots" id="home-slots"></div>
+    <div class="fun-cars" id="fun-cars"></div>
     <div class="home-footer">
       <button class="ghost-btn" id="btn-stats">🏆 Progress</button>
       <button class="ghost-btn" id="btn-fullscreen-home">⛶ Fullscreen</button>
@@ -504,7 +517,45 @@
     return { total:total, mastered:mastered, attempted:attempted, correctCount:correctCount, totalCount:totalCount };
   }
 
-  /* ---------------- sound (synth, no external assets) ---------------- */
+  /* ============================================================
+     SOUND EFFECTS
+     ------------------------------------------------------------
+     HOW TO SWAP IN REAL AUDIO FILES (e.g. from Pixabay):
+       1. Create a folder named "sounds" next to this HTML file.
+       2. Drop your audio file in it, e.g.  sounds/correct.mp3
+       3. Type that filename into SOUND_FILES below, e.g.
+            correct: "correct.mp3"
+       4. Save. That's it — no other code needs to change.
+     Leave a slot as "" (empty string) to keep the built-in
+     synthesized placeholder sound for that effect.
+     ============================================================ */
+  var SOUND_FILES = {
+    correct:   "",   // "Got it!" button — right answer
+    wrong:     "",   // "Try again" button — wrong answer
+    mastery:   "",   // a letter/number hits 10-in-a-row (mastered)
+    hornRed:   "",   // tapping the RED fun car on the home screen
+    hornBlue:  "",   // tapping the BLUE fun car on the home screen
+    hornGreen: ""    // tapping the GREEN fun car on the home screen
+  };
+
+  // Plays SOUND_FILES[key] if a filename is set; otherwise falls
+  // back to the synthesized version in SOUND_SYNTH below.
+  function playSound(key){
+    var file = SOUND_FILES[key];
+    if(file){
+      try{
+        var audio = new Audio("sounds/" + file);
+        audio.play().catch(function(){ runSynth(key); });
+        return;
+      }catch(e){ /* fall through to synth */ }
+    }
+    runSynth(key);
+  }
+  function runSynth(key){
+    if(SOUND_SYNTH[key]) SOUND_SYNTH[key]();
+  }
+
+  /* ---- synthesized placeholder sounds (Web Audio API, no files needed) ---- */
   var actx = null;
   function ctx(){
     if(!actx){
@@ -527,23 +578,44 @@
     gain.gain.exponentialRampToValueAtTime(0.001, t+dur);
     osc.stop(t+dur+0.02);
   }
-  function playCorrect(){
-    // quick ascending "engine rev" honk
-    beep(440,0.09,"square",0,0.05);
-    beep(660,0.09,"square",0.08,0.05);
-    beep(880,0.14,"square",0.16,0.06);
-  }
-  function playWrong(){
-    // low buzzer / screech
-    beep(160,0.22,"sawtooth",0,0.05);
-    beep(120,0.28,"sawtooth",0.05,0.05);
-  }
-  function playMastery(){
-    beep(523,0.1,"square",0,0.05);
-    beep(659,0.1,"square",0.1,0.05);
-    beep(784,0.1,"square",0.2,0.05);
-    beep(1047,0.22,"square",0.3,0.07);
-  }
+
+  var SOUND_SYNTH = {
+    // --- correct answer: quick ascending "engine rev" ---
+    correct: function(){
+      beep(440,0.09,"square",0,0.05);
+      beep(660,0.09,"square",0.08,0.05);
+      beep(880,0.14,"square",0.16,0.06);
+    },
+    // --- wrong answer: low buzzer / screech ---
+    wrong: function(){
+      beep(160,0.22,"sawtooth",0,0.05);
+      beep(120,0.28,"sawtooth",0.05,0.05);
+    },
+    // --- item mastered: little fanfare ---
+    mastery: function(){
+      beep(523,0.1,"square",0,0.05);
+      beep(659,0.1,"square",0.1,0.05);
+      beep(784,0.1,"square",0.2,0.05);
+      beep(1047,0.22,"square",0.3,0.07);
+    },
+    // --- red fun car: sporty ascending triad honk ---
+    hornRed: function(){
+      beep(392,0.1,"square",0,0.06);
+      beep(494,0.1,"square",0.09,0.06);
+      beep(587,0.16,"square",0.18,0.07);
+    },
+    // --- blue fun car: classic two-tone "beep-beep" ---
+    hornBlue: function(){
+      beep(523,0.12,"triangle",0,0.07);
+      beep(523,0.12,"triangle",0.18,0.07);
+    },
+    // --- green fun car: friendly descending chime ---
+    hornGreen: function(){
+      beep(784,0.11,"sine",0,0.06);
+      beep(659,0.11,"sine",0.09,0.06);
+      beep(523,0.18,"sine",0.18,0.07);
+    }
+  };
 
   /* ---------------- navigation ---------------- */
   var screens = {
@@ -559,6 +631,61 @@
   }
 
   /* ---------------- home rendering ---------------- */
+  /* ---------------- home screen: tap-for-fun cars ---------------- */
+  var FUN_CARS = [
+    { id:"red",   base:"#e5383b", light:"#ff8688", dark:"#7f1417", sound:"hornRed"   },
+    { id:"blue",  base:"#3a86ff", light:"#9cc4ff", dark:"#1a3f80", sound:"hornBlue"  },
+    { id:"green", base:"#2d9d5f", light:"#7fe0a8", dark:"#155c35", sound:"hornGreen" }
+  ];
+
+  // Stylized front-on car with gradient shading for a pseudo-3D look.
+  function frontCarSVG(car){
+    var g = "grad-" + car.id, s = "sheen-" + car.id;
+    return '<svg viewBox="0 0 120 104" xmlns="http://www.w3.org/2000/svg">' +
+      '<defs>' +
+        '<linearGradient id="'+g+'" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="'+car.light+'"/>' +
+          '<stop offset="55%" stop-color="'+car.base+'"/>' +
+          '<stop offset="100%" stop-color="'+car.dark+'"/>' +
+        '</linearGradient>' +
+        '<radialGradient id="'+s+'" cx="35%" cy="18%" r="55%">' +
+          '<stop offset="0%" stop-color="#ffffff" stop-opacity=".6"/>' +
+          '<stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>' +
+        '</radialGradient>' +
+      '</defs>' +
+      '<ellipse cx="60" cy="96" rx="36" ry="6" fill="#000" opacity=".25"/>' +
+      '<ellipse cx="19" cy="82" rx="10" ry="13" fill="#17181c"/>' +
+      '<ellipse cx="101" cy="82" rx="10" ry="13" fill="#17181c"/>' +
+      '<path d="M23,90 C18,60 22,32 35,20 C43,12 77,12 85,20 C98,32 102,60 97,90 C97,94 88,96 60,96 C32,96 23,94 23,90 Z" fill="url(#'+g+')" stroke="'+car.dark+'" stroke-width="2"/>' +
+      '<path d="M39,25 C44,10 76,10 81,25 C75,18 45,18 39,25 Z" fill="'+car.light+'" opacity=".85"/>' +
+      '<path d="M37,27 C41,16 79,16 83,27 C80,35 40,35 37,27 Z" fill="#1d2b3a"/>' +
+      '<path d="M41,26 L53,19" stroke="#bfe3ff" stroke-width="2.5" opacity=".6" stroke-linecap="round"/>' +
+      '<rect x="49" y="72" width="22" height="10" rx="2" fill="#17181c"/>' +
+      '<rect x="51.5" y="74.5" width="17" height="1.6" fill="'+car.dark+'"/>' +
+      '<rect x="51.5" y="78" width="17" height="1.6" fill="'+car.dark+'"/>' +
+      '<ellipse cx="33" cy="67" rx="7.5" ry="5.2" fill="#fff6d8" stroke="'+car.dark+'" stroke-width="1.5"/>' +
+      '<ellipse cx="87" cy="67" rx="7.5" ry="5.2" fill="#fff6d8" stroke="'+car.dark+'" stroke-width="1.5"/>' +
+      '<rect x="12" y="42" width="8" height="6" rx="2" fill="'+car.dark+'"/>' +
+      '<rect x="100" y="42" width="8" height="6" rx="2" fill="'+car.dark+'"/>' +
+      '<ellipse cx="50" cy="46" rx="30" ry="27" fill="url(#'+s+')"/>' +
+    '</svg>';
+  }
+
+  function renderFunCars(){
+    var wrap = document.getElementById("fun-cars");
+    if(!wrap) return;
+    wrap.innerHTML = "";
+    FUN_CARS.forEach(function(car){
+      var btn = document.createElement("button");
+      btn.className = "fun-car-btn";
+      btn.type = "button";
+      btn.setAttribute("aria-label", car.id + " car — tap for a honk");
+      btn.innerHTML = frontCarSVG(car);
+      btn.addEventListener("click", function(){ playSound(car.sound); });
+      wrap.appendChild(btn);
+    });
+  }
+
   function renderHome(){
     refreshCustomItems();
     var wrap = document.getElementById("home-slots");
@@ -598,8 +725,7 @@
   }
 
   /* ---------------- practice ---------------- */
-  var practiceState = { catId:null, order:[], idx:0, currentItem:null, sessionStreak:0 };
-  var SESSION_METER_MAX = 10;
+  var practiceState = { catId:null, order:[], idx:0, currentItem:null, sessionStreak:0, sessionMax:10 };
 
   function pickPracticeOrder(catId){
     var cat = CATEGORIES[catId];
@@ -626,6 +752,9 @@
     practiceState.order = pickPracticeOrder(catId);
     practiceState.idx = 0;
     practiceState.sessionStreak = 0;
+    // distance to the checkered flag = number of items in this category
+    // (e.g. 26 net-correct answers for capital letters, 10 for numbers)
+    practiceState.sessionMax = Math.max(1, cat.items.length);
     document.getElementById("practice-title").textContent = cat.name;
     showScreen("practice");
     nextCard();
@@ -646,14 +775,15 @@
 
   function updateTrack(){
     var streak = practiceState.sessionStreak;
-    var pct = Math.min(100, Math.round((streak/SESSION_METER_MAX)*100));
+    var max = practiceState.sessionMax;
+    var pct = Math.min(100, Math.round((streak/max)*100));
     document.getElementById("track-fill").style.width = pct + "%";
     document.getElementById("track-car").style.left = pct + "%";
     var note = document.getElementById("streak-note");
-    if(streak >= SESSION_METER_MAX){
+    if(streak >= max){
       note.textContent = "Pedal to the metal! \ud83c\udfc1";
     } else if(streak > 0){
-      note.textContent = streak + " in a row \u2014 keep going!";
+      note.textContent = streak + " in a row \u2014 " + (max-streak) + " to the flag";
     } else {
       note.textContent = "Say it out loud, then tap the result";
     }
@@ -678,17 +808,17 @@
     var wasMastered = isMastered(catId, item);
     logAttempt(catId, item, correct);
     if(correct){
-      playCorrect();
+      playSound("correct");
       triggerFlagWave();
-      practiceState.sessionStreak = Math.min(SESSION_METER_MAX, practiceState.sessionStreak + 1);
+      practiceState.sessionStreak = Math.min(practiceState.sessionMax, practiceState.sessionStreak + 1);
     } else {
-      playWrong();
+      playSound("wrong");
       practiceState.sessionStreak = Math.max(0, practiceState.sessionStreak - 1);
     }
     var nowMastered = isMastered(catId, item);
     updateTrack();
     if(!wasMastered && nowMastered){
-      playMastery();
+      playSound("mastery");
       showMasteryToast();
     }
     practiceState.idx++;
@@ -870,6 +1000,7 @@
 
   /* ---------------- init ---------------- */
   renderHome();
+  renderFunCars();
   setupPerimeterDecor();
 })();
 </script>
