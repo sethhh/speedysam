@@ -550,7 +550,7 @@
      ============================================================ */
   var SOUND_FILES = {
     correct:   "",   // "Got it!" button — right answer
-    wrong:     "",   // "Try again" button — wrong answer
+    wrong:     "squeal2.mp3",   // "Try again" button — wrong answer
     mastery:   "",   // a letter/number hits 10-in-a-row (mastered)
     hornRed:    "",  // tapping the RED fun car on the home screen
     hornBlue:   "",  // tapping the BLUE fun car on the home screen
@@ -766,7 +766,8 @@
   }
 
   /* ---------------- practice ---------------- */
-  var practiceState = { catId:null, order:[], idx:0, currentItem:null, sessionStreak:0, sessionMax:10 };
+  var practiceState = { catId:null, order:[], idx:0, currentItem:null, sessionStreak:0, sessionMax:20 };
+  var SESSION_METER_MAX = 20; // net-correct answers needed to reach the checkered flag
 
   function pickPracticeOrder(catId){
     var cat = CATEGORIES[catId];
@@ -793,9 +794,9 @@
     practiceState.order = pickPracticeOrder(catId);
     practiceState.idx = 0;
     practiceState.sessionStreak = 0;
-    // distance to the checkered flag = number of items in this category
-    // (e.g. 26 net-correct answers for capital letters, 10 for numbers)
-    practiceState.sessionMax = Math.max(1, cat.items.length);
+    // distance to the checkered flag: always a net +20 (each correct
+    // answer moves the car forward 1, each miss moves it back 1)
+    practiceState.sessionMax = SESSION_METER_MAX;
     document.getElementById("practice-title").textContent = cat.name;
     showScreen("practice");
     nextCard();
