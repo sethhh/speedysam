@@ -523,24 +523,18 @@
      Every sound in the app plays through SOUND_FILES below. To
      replace any sound with a real MP3 you found (e.g. on Pixabay):
 
-       1. In your GitHub repo, next to this HTML file, create a
-          folder named exactly:  sounds
-          (so you end up with a path like  sounds/whatever.mp3
-          sitting alongside sams-speedway.html)
+       1. In your GitHub repo, add your MP3 file in the SAME
+          folder as this HTML file (no subfolder needed — just
+          drop it right next to index.html) and commit/push it.
 
-       2. Add your MP3 file into that "sounds" folder and commit /
-          push it to GitHub along with the HTML file.
-
-       3. Come back to the list below and type the file's name
-          (just the filename, NOT the full path — no "sounds/" in
-          front of it, that part is added automatically) into the
-          matching slot, in quotes. For example, if you added
-          sounds/vroom.mp3, change:
+       2. Come back to the list below and type the file's exact
+          name, in quotes, into the matching slot. For example,
+          if you added vroom.mp3, change:
               correct: ""
           to:
               correct: "vroom.mp3"
 
-       4. Save this file and refresh the page. Done — no other
+       3. Save this file and refresh the page. Done — no other
           code anywhere needs to change.
 
      Leave a slot as "" (empty quotes) to keep using the built-in
@@ -564,11 +558,20 @@
   function playSound(key){
     var file = SOUND_FILES[key];
     if(file){
+      var path = file; // looks for the file in the same folder as this HTML file
       try{
-        var audio = new Audio("sounds/" + file);
-        audio.play().catch(function(){ runSynth(key); });
+        var audio = new Audio(path);
+        audio.addEventListener("error", function(){
+          console.warn('[Speedway sound] Could not load "' + path + '" — check that the file exists at that exact path/name (case-sensitive) and has been pushed to GitHub. Falling back to the placeholder beep.');
+        });
+        audio.play().catch(function(err){
+          console.warn('[Speedway sound] Could not play "' + path + '": ' + err + '. Falling back to the placeholder beep.');
+          runSynth(key);
+        });
         return;
-      }catch(e){ /* fall through to synth */ }
+      }catch(e){
+        console.warn('[Speedway sound] Error setting up "' + path + '": ' + e + '. Falling back to the placeholder beep.');
+      }
     }
     runSynth(key);
   }
